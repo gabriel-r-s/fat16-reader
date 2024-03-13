@@ -2,6 +2,7 @@ use crate::dir::DirEntry;
 use std::fs::File;
 use std::io::{Read, Seek, SeekFrom};
 
+// struct para desserialização
 #[derive(Debug)]
 #[repr(packed)]
 #[repr(C)]
@@ -22,6 +23,7 @@ pub struct BootRecord {
     _large_sectors: u32,
 }
 
+// struct para armazenar apenas dados relevantes
 #[derive(Debug)]
 pub struct Fat16Img {
     img: File,
@@ -41,7 +43,6 @@ impl Fat16Img {
         img.read_exact(&mut buf[..std::mem::size_of::<BootRecord>()])
             .expect("Bad image");
         let br = unsafe { buf[0..].as_ptr().cast::<BootRecord>().read() };
-        // println!("{:#?}", br);
         let offset_fat1 = br.reserved_sectors;
         let fat_count = br.fats as u16;
         let offset_root = br.reserved_sectors + fat_count * br.sectors_per_fat;
@@ -55,11 +56,14 @@ impl Fat16Img {
 
         let reserved_sectors = br.reserved_sectors;
         let root_dir_entries = br.root_dir_entries;
+        let sectors_per_fat = br.sectors_per_fat;
 
+        println!("**METADADOS IMAGEM FAT**");
         println!("BYTES POR SETOR: {bytes_per_sector}");
         println!("SETORES RESERVADOS: {reserved_sectors}",);
         println!("SETORES POR CLUSTER: {sectors_per_cluster}");
         println!("NUMERO DE FATs: {fat_count}");
+        println!("SETORES POR FATs: {sectors_per_fat}");
         println!("ENTRADAS DO DIRETÓRIO RAIZ: {root_dir_entries}",);
 
         buf.resize(cluster_size as usize, 0);
@@ -79,6 +83,7 @@ impl Fat16Img {
         self.root_dir_entries
     }
 
+    // acessar FAT para encontrar o cluster seguinte
     pub fn next_cluster(&mut self, cluster: u16) -> u16 {
         let cluster = cluster as u64;
         self.img
@@ -95,6 +100,7 @@ impl Fat16Img {
         next
     }
 
+    // ler diretorio em `offset[start]`
     pub fn read_dir(&mut self, offset: u64, start: u64) -> [DirEntry; ENTRY_BUF_SIZE] {
         let mut entries = [DirEntry::new(); ENTRY_BUF_SIZE];
         let offset = offset + start * (std::mem::size_of::<DirEntry>() as u64);

@@ -81,39 +81,16 @@ impl DirEntry {
     }
 }
 
-fn fmt_date(date: u16) {
-    let day = date & 0x_1F;
-    let month = (date >> 5) & 0xF;
-    let year = (date >> 9) & 0x7F;
-
-    // print!("{:02}/{:02}/{:04}", day, month, year);
-    print!("{:02}/{:02}/{:04}", day, month, year);
-}
-
-fn fmt_time(time: u16) {
-    let sec = (time & 0x1F) * 2;
-    let min = (time >> 5) & 0x3F;
-    let hour = (time >> 11) & 0x1F;
-
-    print!("{:02}:{:02}:{:02}", hour, min, sec);
-}
-
 pub fn ls_entry(entry: DirEntry) {
-    if entry.attr_lfn() || entry.attr_hidden() {
-        return;
+    if entry.attr_directory() {
+        print!("DIR  ");
+    } else {
+        print!("FILE ");
     }
     let size = entry.size;
+    print!("{:4}B ", size);
 
-    print!("---- ");
-
-    if entry.attr_directory() {
-        print!("DIR 0B\t");
-    } else {
-        let size = entry.size;
-        print!("FILE {}B\t", size);
-    }
-
-    print!("FIRST_CLUSTER={:04x} | ", entry.first_cluster());
+    print!("FIRST_CLUSTER=0x{:04x} | ", entry.first_cluster());
 
     for byte in entry.name() {
         if byte.is_ascii_whitespace() {
@@ -131,20 +108,4 @@ pub fn ls_entry(entry: DirEntry) {
         }
     }
     print!("\n");
-
-    // print!("TOUCH ");
-    // fmt_date(entry.touch_date);
-    // print!(" ");
-
-    // print!("MOD   ");
-    // fmt_date(entry.modif_date);
-    // print!(" ");
-    // fmt_time(entry.modif_time);
-    // print!(" ");
-
-    // print!("CREAT ");
-    // fmt_date(entry.creat_date);
-    // print!(" ");
-    // fmt_time(entry.creat_time);
-    // println!();
 }
